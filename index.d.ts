@@ -52,6 +52,9 @@ export interface SplitObjectState extends SplitState<ObjectState> {
     };
 }
 export declare type SplitSaveState = SplitState<SaveState>;
+export interface MetaOptions {
+    childrenDir?: string;
+}
 export declare function nameObject(object: ObjectState): string;
 /**
  * @internal For testing only.
@@ -101,7 +104,7 @@ export declare class SplitIO {
     /**
      * Writes a @type {SplitSaveState} to disk as a tree of files.
      */
-    writeSplit(to: string, data: SplitSaveState): Promise<string>;
+    writeSplit(to: string, data: SplitSaveState, options?: MetaOptions): Promise<string>;
     private toEncodedSave;
     private toEncodedObject;
     private writeSplitSave;
@@ -109,7 +112,7 @@ export declare class SplitIO {
     /**
      * Reads a directory structure representing a @type {SplitSaveState}.
      */
-    readAndCollapse(file: string): Promise<SaveState>;
+    readAndCollapse(file: string, options?: MetaOptions): Promise<SaveState>;
     private collapseSave;
     private collapseObject;
     private readIncludes;

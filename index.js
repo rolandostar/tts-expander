@@ -357,9 +357,9 @@ class SplitIO {
     /**
      * Writes a @type {SplitSaveState} to disk as a tree of files.
      */
-    writeSplit(to, data) {
+    writeSplit(to, data, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.writeSplitSave(to, data);
+            return this.writeSplitSave(to, data, options);
         });
     }
     toEncodedSave(data) {
@@ -383,7 +383,7 @@ class SplitIO {
         }
         return result;
     }
-    writeSplitSave(to, data) {
+    writeSplitSave(to, data, options = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             const outJson = path_1.default.join(to, data.metadata.filePath);
             yield this.writeJson(outJson, this.toEncodedSave(data));
@@ -400,7 +400,9 @@ class SplitIO {
                 yield this.writeString(outLua, data.xmlUi.contents);
             }
             if (data.children && data.children.length) {
-                const outChild = path_1.default.join(to, data.metadata.filePath.split('.')[0]);
+                const outChild = path_1.default.join(to, options.childrenDir !== undefined
+                    ? options.childrenDir
+                    : data.metadata.filePath.split('.')[0]);
                 yield this.mkdirp(outChild);
                 yield Promise.all(
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -444,9 +446,9 @@ class SplitIO {
     /**
      * Reads a directory structure representing a @type {SplitSaveState}.
      */
-    readAndCollapse(file) {
+    readAndCollapse(file, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.collapseSave(yield this.readExtractedSave(file));
+            return this.collapseSave(yield this.readExtractedSave(file, options));
         });
     }
     collapseSave(save) {
@@ -499,7 +501,7 @@ class SplitIO {
             };
         });
     }
-    readExtractedSave(file) {
+    readExtractedSave(file, options = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             const rawJson = this.rewriteFromSource(yield this.readFile(file, 'utf-8'), file);
             const includesDir = path_1.default.join(path_1.default.dirname(file), 'includes');
@@ -515,7 +517,9 @@ class SplitIO {
             };
             if (entry.ObjectPaths) {
                 result.children = yield Promise.all(entry.ObjectPaths.map((relative) => __awaiter(this, void 0, void 0, function* () {
-                    const target = path_1.default.join(path_1.default.dirname(file), path_1.default.basename(file).split('.')[0], relative);
+                    const target = path_1.default.join(path_1.default.dirname(file), options.childrenDir !== undefined
+                        ? options.childrenDir
+                        : path_1.default.basename(file).split('.')[0], relative);
                     return {
                         filePath: path_1.default.basename(target),
                         contents: yield this.readExtractedObject(target, includesDir),
