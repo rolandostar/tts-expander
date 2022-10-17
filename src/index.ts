@@ -69,6 +69,10 @@ export interface SplitObjectState extends SplitState<ObjectState> {
 
 export type SplitSaveState = SplitState<SaveState>;
 
+export interface MetaOptions {
+  childrenDir?: string;
+}
+
 function copyObjectWithoutDuplicateNodes(
   object: ObjectState,
   name: string,
@@ -460,8 +464,12 @@ export class SplitIO {
   /**
    * Writes a @type {SplitSaveState} to disk as a tree of files.
    */
-  async writeSplit(to: string, data: SplitSaveState): Promise<string> {
-    return this.writeSplitSave(to, data);
+  async writeSplit(
+    to: string,
+    data: SplitSaveState,
+    options?: MetaOptions,
+  ): Promise<string> {
+    return this.writeSplitSave(to, data, options);
   }
 
   private toEncodedSave(data: SplitSaveState): ExpandedSaveState {
@@ -489,6 +497,7 @@ export class SplitIO {
   private async writeSplitSave(
     to: string,
     data: SplitSaveState,
+    options: MetaOptions = {},
   ): Promise<string> {
     const outJson = path.join(to, data.metadata.filePath);
     await this.writeJson(outJson, this.toEncodedSave(data));
@@ -509,7 +518,12 @@ export class SplitIO {
     }
 
     if (data.children && data.children.length) {
-      const outChild = path.join(to, data.metadata.filePath.split('.')[0]);
+      const outChild = path.join(
+        to,
+        options.childrenDir !== undefined
+          ? options.childrenDir
+          : data.metadata.filePath.split('.')[0],
+      );
       await this.mkdirp(outChild);
       await Promise.all(
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -569,8 +583,11 @@ export class SplitIO {
   /**
    * Reads a directory structure representing a @type {SplitSaveState}.
    */
-  async readAndCollapse(file: string): Promise<SaveState> {
-    return this.collapseSave(await this.readExtractedSave(file));
+  async readAndCollapse(
+    file: string,
+    options?: MetaOptions,
+  ): Promise<SaveState> {
+    return this.collapseSave(await this.readExtractedSave(file, options));
   }
 
   private collapseSave(save: SplitSaveState): SaveState {
@@ -641,7 +658,10 @@ export class SplitIO {
     };
   }
 
-  private async readExtractedSave(file: string): Promise<SplitSaveState> {
+  private async readExtractedSave(
+    file: string,
+    options: MetaOptions = {},
+  ): Promise<SplitSaveState> {
     const rawJson = this.rewriteFromSource(
       await this.readFile(file, 'utf-8'),
       file,
@@ -674,7 +694,9 @@ export class SplitIO {
         entry.ObjectPaths.map(async (relative) => {
           const target = path.join(
             path.dirname(file),
-            path.basename(file).split('.')[0],
+            options.childrenDir !== undefined
+              ? options.childrenDir
+              : path.basename(file).split('.')[0],
             relative,
           );
           return {
